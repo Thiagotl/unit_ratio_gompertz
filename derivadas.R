@@ -1,4 +1,4 @@
-tau=.5;mu=.85;sigma=2;x=.63
+tau=.5;mu=.85;sigma=.2;x=.63
 
 ll<-expression(
   log(sigma)+log(-log(1-tau))+((sigma*x)/(1-x))-2*log(1-x)-log(exp((sigma*mu)/(1-mu))-1)+(exp((sigma*x)/(1-x))-1)/(exp((sigma*mu)/(1-mu))-1) * log(1-tau)

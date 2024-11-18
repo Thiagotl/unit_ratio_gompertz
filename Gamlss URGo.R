@@ -68,7 +68,7 @@ URGo<-function (mu.link = "logit", sigma.link = "log")
                    rqres(pfun = "pURGo", type = "Continuous", y = y, mu = mu, sigma = sigma)
                  ),
                  mu.initial = expression(mu <- rep(mean(y),length(y))),
-                 sigma.initial = expression(sigma<- rep(3.14, length(y))),
+                 sigma.initial = expression(sigma<- rep(5, length(y))),
                  mu.valid = function(mu) all(mu > 0 & mu < 1),
                  sigma.valid = function(sigma) all(sigma > 0),
                  y.valid = function(y) all(y > 0 & y < 1)
@@ -120,12 +120,17 @@ qURGo<-function(u,mu, sigma, tau = 0.5)
 #qURGo(u,mu=.7,sigma=5) # checking the qf with the cdf
 #------------------------------------------------------------------------------------------
 # inversion method for randon generation
-rURGo<-function(n,mu,sigma)
-{
+
+# n=100;mu=.7;sigma=5
+# 
+# 
+rURGo<-function(n,mu, sigma){
+  tau=0.5
   u<- runif(n)
-  y<- qURGo(u,mu =mu, sigma =sigma)
-  y
+  y<- qURGo(u,mu=mu,sigma=sigma)
+  return(y)
 }
+
 
 # h<-qURGo(runif(100),mu =mu, sigma =sigma)
 # print(h)
@@ -134,34 +139,33 @@ rURGo<-function(n,mu,sigma)
 library(gamlss)
 
 set.seed(10)
-n<-c(70, 150, 300, 500, 1000)
-R<-10000
-
+# n<-c(70, 150, 300, 500, 1000)
+# R<-10000
+# 
 # Case 1: without regressors
-mu_true<-.7
-sigma_true<-5
-mu_result<-sigma_result<-c()
-logit_link<-make.link("logit")
+# mu_true<-.7
+# sigma_true<-5
+# mu_result<-sigma_result<-c()
+# logit_link<-make.link("logit")
 
-
-
-for (i in n){
-  pb <- txtProgressBar(min = 0, max = R, style = 3)
-  for (i in 1:R){
-  y<-rURGo(n,mu_true,sigma_true)
-  fit1<-gamlss(y~1, family="URGo", c.crit = 0.001, n.cyc = 700,
-               mu.step = .1, sigma.step = .1,trace = F)
-  
-  mu_result[i]<-logit_link$linkinv(fit1$mu.coefficients)
-  sigma_result[i]<-exp(fit1$sigma.coefficients)
-  setTxtProgressBar(pb, i)
-  }
-  result1<- matrix(c(mu_true, mean(mu_result),
-                     sigma_true, mean(sigma_result)),2,2)
-  colnames(result1)<-c("mu","sigma")
-  rownames(result1)<-c("true value","mean")
-  print(round(result1,2))
-  }
+# 
+# for (i in n){
+#   pb <- txtProgressBar(min = 0, max = R, style = 3)
+#   for (i in 1:R){
+#   y<-rURGo(n,mu_true,sigma_true)
+#   fit1<-gamlss(y~1, family="URGo", c.crit = 0.001, n.cyc = 700,
+#                mu.step = .1, sigma.step = .1,trace = F)
+#   
+#   mu_result[i]<-logit_link$linkinv(fit1$mu.coefficients)
+#   sigma_result[i]<-exp(fit1$sigma.coefficients)
+#   setTxtProgressBar(pb, i)
+#   }
+#   result1<- matrix(c(mu_true, mean(mu_result),
+#                      sigma_true, mean(sigma_result)),2,2)
+#   colnames(result1)<-c("mu","sigma")
+#   rownames(result1)<-c("true value","mean")
+#   print(round(result1,2))
+#   }
 
 
 # n<-100 #TA FUNCIONANDO NORMAL PARA ESSE n
@@ -176,18 +180,9 @@ for (i in n){
 #   sigma_result[i]<-exp(fit1$sigma.coefficients)
 #   setTxtProgressBar(pb, i)
 # }
-
-
-
-result1<- matrix(c(mu_true, mean(mu_result),
-                   sigma_true, mean(sigma_result)),2,2)
-colnames(result1)<-c("mu","sigma")
-rownames(result1)<-c("true value","mean")
-print(round(result1,2))
-
-
-
-
+# 
+# 
+# 
 # result1<- matrix(c(mu_true, mean(mu_result),
 #                    sigma_true, mean(sigma_result)),2,2)
 # colnames(result1)<-c("mu","sigma")
@@ -195,30 +190,36 @@ print(round(result1,2))
 # print(round(result1,2))
 
 
-
 # CHEKING WITH REGRESSORS
-n<-1000 #amostra
+n<-100 #amostra
 X<-runif(n)
 logit_link<-make.link("logit")
 log_link<-make.link("log")
-b1<-.7 #mu
-b2<-3  #mu
+b1<--1 #mu
+b2<-.4  #mu
 mu_true<-logit_link$linkinv(b1+b2*X)
-g1<-5 #sigma
-g2<-1.5 #sigma
+g1<--.7#.3 #sigma
+g2<-3.5 #sigma
 sigma_true<-log_link$linkinv(g1+g2*X)
-R<-10000
+
+mean(sigma_true)
+
+R<-174
 mu_result<-sigma_result<-matrix(NA,R,2)
 
+X
 for (i in 1:R) {
   pb <- txtProgressBar(min = 0, max = R, style = 3)
-  
+
   y<-rURGo(n,mu_true,sigma_true)
-  fit1<-gamlss(y~X,sigma.formula =~ X, family=URGo(sigma.link = "log"), c.crit = 0.001, n.cyc = 700,
-               mu.step = .1, sigma.step = .1, trace = F)
+  fit1<-gamlss(y~X,sigma.formula =~ X, family=URGo(sigma.link = "log"),
+               c.crit = 0.001, n.cyc = 700,
+               # sigma.start = 3,
+               mu.step = .1, sigma.step = .1,
+               trace = T)
   mu_result[i,]<-fit1$mu.coefficients
   sigma_result[i,]<-fit1$sigma.coefficients
-  
+
   setTxtProgressBar(pb, i)
 }
 
@@ -236,11 +237,6 @@ result1<- cbind(true_values,
 colnames(result1)<-c("true value","mean","bias","eqm")
 rownames(result1)<-c("b1","b2","g1","g2")
 print(round(result1,2))
-
-
-
-
-
 
 
 
