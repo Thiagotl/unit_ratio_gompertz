@@ -1,9 +1,10 @@
 #log-likelihood of the unit ratio Gompertz 
 
-URGo <- expression(
-  log(sigma)+log(-log(1-tau))+((sigma*y)/(1-y))-2*log(1-y)-log(exp((sigma*mu)/(1-mu))-1)+
-    (exp((sigma*y)/(1-y))-1)/(exp((sigma*mu)/(1-mu))-1) * log(1-tau)
-)
+rm(list = ls())
+
+URGo <- expression(log(sigma)+log(-log(1-tau))+((sigma*y)/(1-y))-2*log(1-y)-log(exp((sigma*mu)/(1-mu))-1)+
+                     (exp((sigma*y)/(1-y))-1)/(exp((sigma*mu)/(1-mu))-1) * log(1-tau))
+
 m1URGo<-D(URGo,"mu")
 s1URGo<-D(URGo,"sigma")
 ms2URGo<-D(m1URGo,"sigma")
@@ -77,11 +78,11 @@ URGo<-function (mu.link = "logit", sigma.link = "log")
 #------------------------------------------------------------------------------------------
 
 # density function
-dURGo<-function(y, mu = 0.7, sigma = 2 , tau = 0.5, log = FALSE)
+dURGo<-function(y, mu, sigma, tau = 0.5, log = FALSE)
 {
   if (any(mu <= 0) | any(mu >= 1)) stop(paste("mu must be between 0 and 1", "\n", ""))
   if (any(sigma <= 0)) stop(paste("sigma must be positive", "\n", ""))
-  if (any(y <= 0) | any(y >= 1)) stop(paste("x must be between 0 and 1", "\n", ""))
+  if (any(y <= 0) | any(y >= 1)) stop(paste("y must be between 0 and 1", "\n", ""))
   fy1 <- sigma*log((1-tau)^(-1))*exp(sigma*y/(1-y))/
     ((1-y)^(2)*(exp(sigma*mu/(1-mu))-1))*
     (1-tau)^((exp(sigma*y/(1-y))-1)/(exp(sigma*mu/(1-mu))-1))
@@ -94,10 +95,10 @@ dURGo<-function(y, mu = 0.7, sigma = 2 , tau = 0.5, log = FALSE)
 #integrate(dURGo,0,0.99) # checking the pdf
 #------------------------------------------------------------------------------------------
 # cumulative distribution function
-pURGo<-function(q, mu = 0.7, sigma = 2, tau = 0.5, lower.tail = TRUE, log.p = FALSE){
+pURGo<-function(q, mu, sigma, tau = 0.5, lower.tail = TRUE, log.p = FALSE){
   if (any(mu <= 0) | any(mu >= 1)) stop(paste("mu must be between 0 and 1", "\n", ""))
   if (any(sigma < 0)) stop(paste("sigma must be positive", "\n", ""))
-  if (any(q <= 0) | any(q >= 1)) stop(paste("x must be between 0 and 1", "\n", ""))
+  if (any(q <= 0) | any(q >= 1)) stop(paste("y must be between 0 and 1", "\n", ""))
   cdf1<- 1-(1-tau)^((exp(sigma*q/(1-q))-1)/(exp(sigma*mu/(1-mu))-1))
   if(lower.tail==TRUE) cdf<-cdf1 else cdf<- 1-cdf1
   if(log.p==FALSE) cdf<- cdf else cdf<- log(cdf)
@@ -108,7 +109,7 @@ pURGo<-function(q, mu = 0.7, sigma = 2, tau = 0.5, lower.tail = TRUE, log.p = FA
 # integrate(dURGo,0,.5) # checking the cdf with the pdf
 #------------------------------------------------------------------------------------------
 # quantile function
-qURGo<-function(u,mu = 0.7, sigma = 2, tau = 0.5)
+qURGo<-function(u,mu, sigma, tau = 0.5)
 {
         # log(log(1-u)/log(1-tau)*(exp(sigma*mu/(1-mu))-1)+1)
     q<- log(log(1-u)/log(1-tau)*(exp(sigma*mu/(1-mu))-1)+1)/
@@ -136,16 +137,22 @@ set.seed(10)
 n<-100
 # Case 1: without regressors
 mu_true<-.7
-sigma_true<-.15
+sigma_true<-5
 mu_result<-sigma_result<-c()
 logit_link<-make.link("logit")
 
-for (i in 1:100) {
+
+
+for (i in 1:100000) {
+  pb <- txtProgressBar(min = 0, max = n, style = 3)
+  
   y<-rURGo(n,mu_true,sigma_true)
   fit1<-gamlss(y~1, family="URGo", c.crit = 0.001, n.cyc = 700,
                mu.step = .1, sigma.step = .1,trace = F)
+  
   mu_result[i]<-logit_link$linkinv(fit1$mu.coefficients)
   sigma_result[i]<-exp(fit1$sigma.coefficients)
+  setTxtProgressBar(pb, i)
 }
 
 result1<- matrix(c(mu_true, mean(mu_result),
