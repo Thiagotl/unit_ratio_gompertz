@@ -35,6 +35,12 @@ print(term1 + term2 + term3 + term4)
 
 ##### SEGUNDAS DERIVADAS 
 
+# PARA TESTAR DEPOIS
+d2ldmu2<-D(lmu,"mu")
+eval(d2ldmu2)
+
+d2ldd2<-D(lsigma,"sigma")
+eval(d2ldd2)
 
 # SEGUNDA DERIVADA mu 
 
@@ -72,7 +78,6 @@ term4 <- log_tau * (num / denom)
 
  
 print(term1 + term3 + term4)
-
 
 
 
