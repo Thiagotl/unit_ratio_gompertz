@@ -1,11 +1,4 @@
 #log-likelihood of the unit ratio Gompertz 
-library(gamlss)
-sigma=5.2
-mu=0.17
-tau=.5
-y=.025
-
-
 
 URGo <- expression(
   log(sigma)+log(-log(1-tau))+((sigma*y)/(1-y))-2*log(1-y)-log(exp((sigma*mu)/(1-mu))-1)+
@@ -14,6 +7,7 @@ URGo <- expression(
 m1URGo<-D(URGo,"mu")
 s1URGo<-D(URGo,"sigma")
 ms2URGo<-D(m1URGo,"sigma")
+
 URGo<-function (mu.link = "logit", sigma.link = "log")
 {
   mstats <- checklink("mu.link", "URGo", substitute(mu.link),
@@ -26,12 +20,16 @@ URGo<-function (mu.link = "logit", sigma.link = "log")
                  type = "Continuous",
                  mu.link = as.character(substitute(mu.link)),
                  sigma.link = as.character(substitute(sigma.link)),
+                 
                  mu.linkfun = mstats$linkfun,
                  sigma.linkfun = dstats$linkfun,
+                 
                  mu.linkinv = mstats$linkinv,
                  sigma.linkinv = dstats$linkinv,
+                 
                  mu.dr = mstats$mu.eta,
                  sigma.dr = dstats$mu.eta,
+                 
                  dldm = function(y, mu, sigma) {
                    tau=.5
                    dldm <- eval(m1URGo)
@@ -78,12 +76,8 @@ URGo<-function (mu.link = "logit", sigma.link = "log")
 }
 #------------------------------------------------------------------------------------------
 
-mu = 0.7
-sigma =5 
-tau = 0.5
-# y=2
 # density function
-dURGo<-function(y, mu = 0.7, sigma =5 , tau = 0.5, log = FALSE)
+dURGo<-function(y, mu = 0.7, sigma = 2 , tau = 0.5, log = FALSE)
 {
   if (any(mu <= 0) | any(mu >= 1)) stop(paste("mu must be between 0 and 1", "\n", ""))
   if (any(sigma <= 0)) stop(paste("sigma must be positive", "\n", ""))
@@ -97,10 +91,10 @@ dURGo<-function(y, mu = 0.7, sigma =5 , tau = 0.5, log = FALSE)
   fy<-fy1 else fy<-log(fy1)
   fy
 }
-integrate(dURGo,0,0.99) # checking the pdf
+#integrate(dURGo,0,0.99) # checking the pdf
 #------------------------------------------------------------------------------------------
 # cumulative distribution function
-pURGo<-function(q, mu = 0.7, sigma = 5, tau = 0.5, lower.tail = TRUE, log.p = FALSE){
+pURGo<-function(q, mu = 0.7, sigma = 2, tau = 0.5, lower.tail = TRUE, log.p = FALSE){
   if (any(mu <= 0) | any(mu >= 1)) stop(paste("mu must be between 0 and 1", "\n", ""))
   if (any(sigma < 0)) stop(paste("sigma must be positive", "\n", ""))
   if (any(q <= 0) | any(q >= 1)) stop(paste("x must be between 0 and 1", "\n", ""))
@@ -114,15 +108,15 @@ pURGo<-function(q, mu = 0.7, sigma = 5, tau = 0.5, lower.tail = TRUE, log.p = FA
 # integrate(dURGo,0,.5) # checking the cdf with the pdf
 #------------------------------------------------------------------------------------------
 # quantile function
-qURGo<-function(u,mu = 0.7, sigma = 5, tau = 0.5)
+qURGo<-function(u,mu = 0.7, sigma = 2, tau = 0.5)
 {
         # log(log(1-u)/log(1-tau)*(exp(sigma*mu/(1-mu))-1)+1)
     q<- log(log(1-u)/log(1-tau)*(exp(sigma*mu/(1-mu))-1)+1)/
     (sigma + log(log(1-u)/log(1- tau)*(exp(sigma * mu/(1 - mu)) -1)+1))
   q
 }
-u=pURGo(.183665,mu=.7,sigma=5)
-qURGo(u,mu=.7,sigma=5) # checking the qf with the cdf
+#u=pURGo(.183665,mu=.7,sigma=5)
+#qURGo(u,mu=.7,sigma=5) # checking the qf with the cdf
 #------------------------------------------------------------------------------------------
 # inversion method for randon generation
 rURGo<-function(n,mu,sigma)
@@ -132,19 +126,8 @@ rURGo<-function(n,mu,sigma)
   y
 }
 
-
-
 # h<-qURGo(runif(100),mu =mu, sigma =sigma)
-# 
 # print(h)
-
-
-
-
-
-
-
-
 
 # Checking the results
 library(gamlss)
@@ -155,13 +138,16 @@ n<-100
 mu_true<-.7
 sigma_true<-.15
 mu_result<-sigma_result<-c()
+logit_link<-make.link("logit")
+
 for (i in 1:100) {
   y<-rURGo(n,mu_true,sigma_true)
-  fit1<-gamlss(y~1, family="URGo", trace = F)
-  logit_link<-make.link("logit")
+  fit1<-gamlss(y~1, family="URGo", c.crit = 0.001, n.cyc = 700,
+               mu.step = .1, sigma.step = .1,trace = F)
   mu_result[i]<-logit_link$linkinv(fit1$mu.coefficients)
   sigma_result[i]<-exp(fit1$sigma.coefficients)
 }
+
 result1<- matrix(c(mu_true, mean(mu_result),
                    sigma_true, mean(sigma_result)),2,2)
 colnames(result1)<-c("mu","sigma")

@@ -1,6 +1,6 @@
 #------------------------------------------------------------------------------------------
 # density function
-dURGo<-function(x, mu = 0.7, sigma =5 , tau = 0.5, log = FALSE)
+dURGo<-function(x, mu = 0.7, sigma = 1 , tau = 0.5, log = FALSE)
 {
   if (any(mu <= 0) | any(mu >= 1)) stop(paste("mu must be between 0 and 1", "\n", ""))
   if (any(sigma <= 0)) stop(paste("sigma must be positive", "\n", ""))
@@ -14,10 +14,10 @@ dURGo<-function(x, mu = 0.7, sigma =5 , tau = 0.5, log = FALSE)
   fy
 }
 # integrate(dURGo,0,1) # checking the pdf
-integrate(dURGo,0,0.99)
+integrate(dURGo,0, 0.99)
 #------------------------------------------------------------------------------------------
 # cumulative distribution function
-pURGo<-function(q, mu = 0.7, sigma = 5, tau = 0.5, lower.tail = TRUE, log.p = FALSE){
+pURGo<-function(q, mu = 0.7, sigma = 1, tau = 0.5, lower.tail = TRUE, log.p = FALSE){
   if (any(mu <= 0) | any(mu >= 1)) stop(paste("mu must be between 0 and 1", "\n", ""))
   if (any(sigma < 0)) stop(paste("sigma must be positive", "\n", ""))
   if (any(q <= 0) | any(q >= 1)) stop(paste("x must be between 0 and 1", "\n", ""))
@@ -27,12 +27,12 @@ pURGo<-function(q, mu = 0.7, sigma = 5, tau = 0.5, lower.tail = TRUE, log.p = FA
   cdf
   
 }
-pURGo(.3,sigma = 5)
-integrate(dUG,0,.5) # checking the cdf with the pdf
-integrate(dURGo,0,.5)
+pURGo(.3)
+# checking the cdf with the pdf
+integrate(dURGo,0,.3)
 #------------------------------------------------------------------------------------------
 # quantile function
-qURGo<-function(u,mu = 0.7, sigma = 2.1, tau = 0.5)
+qURGo<-function(u,mu = 0.7, sigma = 1.2, tau = 0.5)
 {
   q<- log(log(1-u)/log(1- tau)*(exp(sigma - mu)/(1 - mu) -1)+1)/
     sigma + log(log(1-u)/log(1- tau)*(exp(sigma - mu)/(1 - mu) -1)+1)
