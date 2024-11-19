@@ -191,7 +191,7 @@ set.seed(10)
 
 
 # CHEKING WITH REGRESSORS
-vn<-c(70, 150, 300, 500, 1000) #amostra
+vn<-c(30, 70, 150, 300) #amostra
 #X<-runif(vn)
 logit_link<-make.link("logit")
 log_link<-make.link("log")
@@ -201,12 +201,10 @@ b2<-.3 #mu
 g1<--.4 #sigma
 g2<-2.5 #sigma
 #sigma_true<-log_link$linkinv(g1+g2*X)
-
 #mean(sigma_true)
-
-R<-1000
+R<-10000
 #mu_result<-sigma_result<-matrix(NA,R,2)
-bug_counter_1<-0
+#bug_counter_1<-0
 bug_counter_2<-0
 
 mu_result<-sigma_result<-final_results <- list()
@@ -228,7 +226,7 @@ for (n in vn) {
   rURGo(n,mu_true,sigma_true),
   error = function(e){
     #cat("erro aos gerar dados:", e$message, "\n")
-    bug_counter_1 <<- bug_counter + 1
+    #bug_counter_1 <<- bug_counter + 1
     return(NULL)
   }
 )
@@ -274,19 +272,14 @@ if (is.null(y)) next
   rownames(result) <- c("b1", "b2", "g1", "g2")
   final_results[[as.character(n)]] <- result
   
-  # Imprimir resultados intermediários
-  #cat("\nResultados para n =", n, ":\n")
-  #print(round(result, 2))
-  
-  cat("Número total de bugs encontrados:", bug_counter_1, "\n")
+  #cat("Número total de bugs encontrados:", bug_counter_1, "\n")
   
   cat("Número total de bugs encontrados:", bug_counter_2, "\n")
+  #cat("\nResultados Finais:\n")
   
-  cat("\nResultados Finais:\n")
-  
-  # for (n in names(final_results)) {
-  #   cat("\nTamanho da amostra:", n, "\n")
-  #   print(round(final_results[[n]], 2))}
+  for (n in names(final_results)) {
+    cat("\nTamanho da amostra:", n, "\n")
+    print(round(final_results[[n]], 2))}
 }
 
 
