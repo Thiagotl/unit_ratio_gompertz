@@ -191,52 +191,124 @@ set.seed(10)
 
 
 # CHEKING WITH REGRESSORS
-n<-100 #amostra
-X<-runif(n)
+vn<-c(70, 150, 300, 500, 1000) #amostra
+#X<-runif(vn)
 logit_link<-make.link("logit")
 log_link<-make.link("log")
-b1<--1 #mu
-b2<-.4  #mu
-mu_true<-logit_link$linkinv(b1+b2*X)
-g1<--.7#.3 #sigma
-g2<-3.5 #sigma
-sigma_true<-log_link$linkinv(g1+g2*X)
+b1<-.7 #mu
+b2<-.3 #mu
+#mu_true<-logit_link$linkinv(b1+b2*X)
+g1<--.4 #sigma
+g2<-2.5 #sigma
+#sigma_true<-log_link$linkinv(g1+g2*X)
 
-mean(sigma_true)
+#mean(sigma_true)
 
-R<-174
-mu_result<-sigma_result<-matrix(NA,R,2)
+R<-1000
+#mu_result<-sigma_result<-matrix(NA,R,2)
+bug_counter_1<-0
+bug_counter_2<-0
 
-X
-for (i in 1:R) {
+mu_result<-sigma_result<-final_results <- list()
+
+for (n in vn) {
+  
+  mu_result[[as.character(n)]] <- matrix(NA, R, 2)
+  sigma_result[[as.character(n)]] <- matrix(NA, R, 2)
+  
   pb <- txtProgressBar(min = 0, max = R, style = 3)
-
-  y<-rURGo(n,mu_true,sigma_true)
-  fit1<-gamlss(y~X,sigma.formula =~ X, family=URGo(sigma.link = "log"),
-               c.crit = 0.001, n.cyc = 700,
-               # sigma.start = 3,
-               mu.step = .1, sigma.step = .1,
-               trace = T)
-  mu_result[i,]<-fit1$mu.coefficients
-  sigma_result[i,]<-fit1$sigma.coefficients
-
+  
+  for(i in 1:R){
+    
+  X<-runif(n)
+  mu_true<-logit_link$linkinv(b1+b2*X)
+  sigma_true<-log_link$linkinv(g1+g2*X)
+  
+  y<- tryCatch(
+  rURGo(n,mu_true,sigma_true),
+  error = function(e){
+    #cat("erro aos gerar dados:", e$message, "\n")
+    bug_counter_1 <<- bug_counter + 1
+    return(NULL)
+  }
+)
+  
+if (is.null(y)) next
+  
+  fit1<-tryCatch(gamlss(y~X,sigma.formula =~ X, 
+               family=URGo(sigma.link = "log"),
+               c.crit = 0.001, 
+               n.cyc = 700,
+               #sigma.start = 3,
+               mu.step = .1, 
+               sigma.step = .1,
+               trace = F),
+               error = function(e){
+               #cat("Erro ao ajustar o modelo na iteração", i, ":", e$message, "\n")
+               bug_counter_2 <<- bug_counter_2 + 1
+               return(NULL)
+               })
+  #mu_result[i,]<-fit1$mu.coefficients
+  #sigma_result[i,]<-fit1$sigma.coefficients
+  if (is.null(fit1)) next
+  mu_result[[as.character(n)]][i, ] <- fit1$mu.coefficients
+  sigma_result[[as.character(n)]][i, ] <- fit1$sigma.coefficients
+  
   setTxtProgressBar(pb, i)
+  }
+  true_values <- c(b1, b2, g1, g2)
+  mean_values <- c(apply(mu_result[[as.character(n)]], 2, mean, na.rm = TRUE),
+                   apply(sigma_result[[as.character(n)]], 2, mean, na.rm = TRUE))
+  b_values <- (true_values - mean_values) / true_values * 100
+  eqm_values <- c(
+    apply(mu_result[[as.character(n)]], 2, var, na.rm = TRUE),
+    apply(sigma_result[[as.character(n)]], 2, var, na.rm = TRUE)) + 
+    (true_values - mean_values)^2
+  
+  result <- cbind(
+    "True Value" = true_values,
+    "Mean" = mean_values,
+    "Bias (%)" = b_values,
+    "EQM" = eqm_values)
+  
+  rownames(result) <- c("b1", "b2", "g1", "g2")
+  final_results[[as.character(n)]] <- result
+  
+  # Imprimir resultados intermediários
+  #cat("\nResultados para n =", n, ":\n")
+  #print(round(result, 2))
+  
+  cat("Número total de bugs encontrados:", bug_counter_1, "\n")
+  
+  cat("Número total de bugs encontrados:", bug_counter_2, "\n")
+  
+  cat("\nResultados Finais:\n")
+  
+  # for (n in names(final_results)) {
+  #   cat("\nTamanho da amostra:", n, "\n")
+  #   print(round(final_results[[n]], 2))}
 }
 
-true_values<-c(b1,b2, g1,g2)
-mean_values<-c(apply(mu_result,2,mean),
-               apply(sigma_result,2,mean))
-b_values<-(true_values-mean_values)/true_values*100
-eqm_values<-c(apply(mu_result,2,var),
-              apply(sigma_result,2,var))+(true_values-mean_values)^2
-result1<- cbind(true_values,
-                mean_values,
-                b_values,
-                eqm_values
-)
-colnames(result1)<-c("true value","mean","bias","eqm")
-rownames(result1)<-c("b1","b2","g1","g2")
-print(round(result1,2))
+
+
+# cat("Número total de bugs encontrados:", bug_counter_1, "\n")
+# 
+# cat("Número total de bugs encontrados:", bug_counter_2, "\n")
+
+# true_values<-c(b1,b2, g1,g2)
+# mean_values<-c(apply(mu_result,2,mean),
+#                apply(sigma_result,2,mean))
+# b_values<-(true_values-mean_values)/true_values*100
+# eqm_values<-c(apply(mu_result,2,var),
+#               apply(sigma_result,2,var))+(true_values-mean_values)^2
+# result1<- cbind(true_values,
+#                 mean_values,
+#                 b_values,
+#                 eqm_values)
+
+# colnames(result1)<-c("true value","mean","bias","eqm")
+# rownames(result1)<-c("b1","b2","g1","g2")
+# print(round(result1,2))
 
 
 
