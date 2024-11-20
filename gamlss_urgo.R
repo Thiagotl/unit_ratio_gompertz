@@ -135,7 +135,7 @@ rURGo<-function(n,mu, sigma){
 library(gamlss)
 
 
-#vn<-c(30, 70, 150, 300)
+vn<-c(30, 70, 150, 300)
 logit_link<-make.link("logit")
 log_link<-make.link("log")
 b1<-.7 #mu
@@ -143,9 +143,9 @@ b2<-.3 #mu
 g1<--.4 #sigma
 g2<-2.5 #sigma
 
-R<-1000
-n<-1000
-X<-runif(n)
+R<-100
+#n<-1000
+#X<-runif(n)
 
 bug_counter<-0
 
@@ -157,38 +157,47 @@ bug_counter<-0
 mu_true<-logit_link$linkinv(b1+b2*X)
 sigma_true<-log_link$linkinv(g1+g2*X)
 
-mu_result <- matrix(NA, nrow = R, ncol = length(mu_true))  # Resultados de mu
-sigma_result <- matrix(NA, nrow = R, ncol = length(sigma_true))  # Resultados de sigma
 
 
 set.seed(10)
 
 
 
-for (i in 1:R) {
+for (n in vn) {
   
-  y <- rURGo(n, mu_true, sigma_true)
+  mu_result <- matrix(NA, nrow = R, ncol = length(mu_true))  # Resultados de mu
+  sigma_result <- matrix(NA, nrow = R, ncol = length(sigma_true))  # Resultados de sigma
   
-  fit1 <- try(gamlss(y ~ X, sigma.formula = ~ X, 
-                     family = URGo(sigma.link = "log"),
-                     c.crit = 0.001,
-                     n.cys = 700,
-                     mu.step = .1,
-                     sigma.step = .1,
-                     trace = FALSE),
-                     silent = TRUE)
+  pb <- txtProgressBar(min = 0, max = R, style = 3)
   
-  
-  if (class(fit1) == "try-error" || is.null(fit1$mu.coefficients) || is.null(fit1$sigma.coefficients)) {
-    bug_counter <- bug_counter + 1  
-    next  
+  for (i in 1:R) {
+    X<-runif(n)
+    mu_true<-logit_link$linkinv(b1+b2*X)
+    sigma_true<-log_link$linkinv(g1+g2*X)
+    
+    y <- rURGo(n, mu_true, sigma_true)
+    
+    fit1 <- try(gamlss(y ~ X, sigma.formula = ~ X, 
+                       family = URGo(sigma.link = "log"),
+                       c.crit = 0.001,
+                       n.cys = 700,
+                       mu.step = .1,
+                       sigma.step = .1,
+                       trace = FALSE),
+                silent = TRUE)
+    if (inherits(fit1, "try-error")){
+      next
+      } 
+    mu_result[i, ] <- fit1$mu.coefficients
+    sigma_result[i, ] <- fit1$sigma.coefficients
+    
   }
   
-  mu_result[i, ] <- fit1$mu.coefficients
-  sigma_result[i, ] <- fit1$sigma.coefficients
+  setTxtProgressBar(pb, i)
 }
 
-print(bug_counter)
+
+
 
 
 

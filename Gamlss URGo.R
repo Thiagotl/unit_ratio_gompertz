@@ -202,7 +202,7 @@ g1<--.4 #sigma
 g2<-2.5 #sigma
 #sigma_true<-log_link$linkinv(g1+g2*X)
 #mean(sigma_true)
-R<-10000
+R<-100
 #mu_result<-sigma_result<-matrix(NA,R,2)
 #bug_counter_1<-0
 bug_counter_2<-0
