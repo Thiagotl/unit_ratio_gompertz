@@ -141,8 +141,8 @@ logit_link <- make.link("logit")
 log_link <- make.link("log")
 b1 <- 0.7  # mu
 b2 <- 0.3  # mu
-g1 <- -0.4 # sigma
-g2 <- 2.5  # sigma
+g1 <- .7 # sigma
+g2 <- .25  # sigma
 R <- 10000  # Número de repetições
 
 set.seed(10)
@@ -178,42 +178,48 @@ for (n in vn) {
   # Inicializar matrizes de resultados para o tamanho da amostra atual
   mu_result <- matrix(NA, R, 2)  # Para b1, b2
   sigma_result <- matrix(NA, R, 2)  # Para g1, g2
-  
+  # X <- rnorm(n)
+  X <- runif(n)
+  # Gerar dados
+  mu_true <- logit_link$linkinv(b1+b2*X)
+  # mean(mu_true)
+  sigma_true <- log_link$linkinv(g1+g2*X)
+  # mean(sigma_true)
   pb <- txtProgressBar(min = 0, max = R, style = 3)
   
-  for (i in 1:R) {
-    # Gerar dados
-    X <- runif(n)
-    mu_true <- logit_link$linkinv(b1 + b2 * X)
-    sigma_true <- log_link$linkinv(g1 + g2 * X)
+  i<-0
+  while (i < R) {
     y <- rURGo(n, mu_true, sigma_true)  # Geração dos dados
     
     # Ajustar o modelo com tratamento de erro
     fit1 <- try(
-      gamlss(
-        y ~ X, sigma.formula = ~ X,
-        family = URGo(sigma.link = "log"),
-        c.crit = 0.001,
-        n.cyc = 700,
-        mu.step = 0.1,
-        sigma.step = 0.1,
-        trace = FALSE
-      ),
-      silent = TRUE
-    )
+        gamlss(
+          y ~ X, sigma.formula = ~ X,
+          family = URGo(sigma.link = "log"),
+          # sigma.start = start,
+          c.crit = 0.001,
+          n.cyc = 700,
+          mu.step = 0.1,
+          sigma.step = 0.1,
+          trace = FALSE
+        ),
+        silent = TRUE
+      )
     
     if (inherits(fit1, "try-error")) {
       bug_counter <- bug_counter + 1
       next
     }
     
+    i<-i+1
+    # print(i)
     # Armazenar coeficientes ajustados
     mu_result[i, ] <- fit1$mu.coefficients
     sigma_result[i, ] <- fit1$sigma.coefficients
     
     setTxtProgressBar(pb, i)
   }
-  
+  # print(sigma_result)
   close(pb)
   
   # Calcular métricas
@@ -228,12 +234,74 @@ for (n in vn) {
 }
 
 # Exibir contadores de erros
-cat("\nNúmero total de erros no ajuste do modelo:", bug_counter, "\n")
+# cat("\nNúmero total de erros no ajuste do modelo:", bug_counter, "\n")
 
 
 
 
+# PARA VALORES ALEATÓRIOS 
+pdf.plot(
+  obj = fit1,
+  obs = 1:8,
+  from = 0.001,  
+  to = 0.999,    
+  no.points = 201,
+  y.axis.lim = 5
+)
+
+
+# FOR TO MU
+
+pdf.plot(
+  family = URGo(sigma.link = "log"),
+  mu = c(0.3,0.5,0.7,0.9),
+  sigma = 0.7,
+  from = 0.001,
+  to = 0.999,
+  no.points = 201,
+  y.axis.lim = 5
+)
+
+# FOR TO SIGMA
+
+pdf.plot(
+  family = URGo(sigma.link = "log"),
+  mu = 0.5,
+  sigma = c(0.3, 0.5, 0.7, 0.9),
+  from = 0.001,
+  to = 0.999,
+  no.points = 201,
+  y.axis.lim = 5
+)
 
 
 
+# library(ggplot2)
+# 
+# y_values<-seq(0.001, 0.999, length.out = 100)
+# sigma_values <- c(0.2, 0.3, 0.5, 0.7) 
+# mu <- 0.5
+# 
+# 
+# results <- data.frame(
+#   y = rep(y_values, length(sigma_values)),
+#   sigma = rep(sigma_values, each = length(y_values)),
+#   density = NA
+# )
+# 
+# 
+# for (s in sigma_values) {
+#   results$density[results$sigma == s] <- dURGo(y_values, mu, s)
+# }
+# 
+# 
+# ggplot(results, aes(x = y, y = density, color = as.factor(sigma))) +
+#   geom_line(size = 1) +
+#   labs(
+#     title = "Função de Densidade para Diferentes Valores de Sigma",
+#     x = "y",
+#     y = "Densidade",
+#     color = "Sigma"
+#   ) +
+#   theme_minimal()
 
