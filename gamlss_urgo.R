@@ -192,7 +192,7 @@ for (n in vn) {
     fit1 <- try(
       gamlss(
         y ~ X, sigma.formula = ~ X,
-        family = URGo(sigma.link = "log"),
+        family = URGo(sigma.link = "inverse"),
         c.crit = 0.001,
         n.cyc = 700,
         mu.step = 0.1,
