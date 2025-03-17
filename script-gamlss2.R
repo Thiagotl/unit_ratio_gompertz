@@ -143,7 +143,7 @@ b1 <- 0.7  # mu
 b2 <- 0.3  # mu
 g1 <- .7 # sigma
 g2 <- .25  # sigma
-R <- 50  # Número de repetições
+R <- 1000  # Número de repetições
 
 set.seed(10)
 
